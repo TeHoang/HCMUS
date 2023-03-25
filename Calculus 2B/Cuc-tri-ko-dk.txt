@@ -1,0 +1,70 @@
+syms x y 
+f(x,y) = x^4 - x^2 -2*x*y + y^4 -y^2;
+fx = diff(f,x); % first order partial derivative respected to x
+fy = diff(f,y); % first order partial derivative respected to y
+eqns = [fx == 0, fy == 0]; % [4*x^3 - 2*x - 2*y == 0, 4*y^3 - 2*y - 2*x == 0]
+S = solve(eqns,[x,y]); 
+%{
+    S = 
+    struct with fields:
+        x: [7×1 sym]
+        y: [7×1 sym]
+%}
+fxx = diff(fx,x); % second order partial derivative respected to x, x
+fyy = diff(fy,y); % second order partial derivative respected to y, y
+fxy = diff(fx,y); % second order partial derivative respected to x, y
+D(x,y) = fxx*fyy - fxy^2; % Delta fomular
+for i = 1:size(S.x)
+    if(isreal(S.x(i)) && isreal(S.y(i))) % we only consider real numbers
+        D_i = double(D(S.x(i),S.y(i))); % calculate the delta at point (x_i,y_i)
+        A = double(fxx(S.x(i),S.y(i))); % fxx(x_i,y_i)
+        if(D_i > 0)
+            if(A > 0)
+            fprintf('Cuc tieu tai x = %f, y = %f\n',S.x(i),S.y(i)) % A>0, D>0
+            end
+            if(A < 0)
+            fprintf('Cuc dai tai x = %f, y = %f\n',S.x(i),S.y(i)) % A<0, D>0
+            end
+        end
+        if(D_i < 0)
+            fprintf('Diem yen ngua tai x = %f, y = %f\n',S.x(i),S.y(i)) % D<0
+        end
+        if(D_i == 0)
+            delta = subs(f,[x,y],[S.x(i)+u,S.y(i)+v]) - f(S.x(i),S.y(i)); % delta = f(x_i + u, y_i + v) - f(x_i,y_i)
+            positive = 0; % delta > 0 ?
+            negative = 0; % delta < 0 ? 
+            for j = -1:0.01:1 
+                for k = -1:0.01:1
+                    delta_j_k = subs(delta,[u,v],[j,k]); % (j,k) around (0,0)
+                    if(delta_j_k < 0)
+                        negative = 1; % delta < 0
+                    end
+                    if(delta_j_k > 0)
+                        positive = 1; % delta > 0
+                    end
+                    if(positive*negative == 1)
+                        break % optimization step
+                    end
+                end
+                if(positive*negative == 1)
+                    fprintf("f khong dat cuc tri tai x = %f, y = %f\n",S.x(i),S.y(i))
+                    break
+                end
+            end
+            if(positive*negative == 0)
+                if(positive == 1)
+                    fprintf("f dat cuc tieu tai x = %f, y = %f\n",S.x(i),S.y(i)) % positive = 1, negative = 0
+                end
+                if(negative == 1)
+                    fprintf("f dat cuc dai tai x = %f, y = %f\n",S.x(i),S.y(i)) % positive = 0, negative = 1
+                end
+            end
+        end
+    end
+end
+%{
+Output:
+    f khong dat cuc tri tai x = 0.000000, y = 0.000000
+    Cuc tieu tai x = -1.000000, y = -1.000000
+    Cuc tieu tai x = 1.000000, y = 1.000000
+%}
